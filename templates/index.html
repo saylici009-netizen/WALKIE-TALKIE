@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="description" content="Talkie-Walkie Push-to-Talk Radio">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Talkie-Walkie · PTT Radio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #08090d;
+            --bg2: #0e1017;
+            --card: #13151f;
+            --border: #1e2235;
+            --text: #e8eaf0;
+            --dim: #5a6380;
+            --accent: #00d4ff;
+            --accent-dim: #0a5f7a;
+            --glow: rgba(0, 212, 255, 0.15);
+            --talk-idle: #1a1d2e;
+            --talk-border: #2a2d45;
+            --talk-active: #ff2d55;
+            --talk-glow: rgba(255, 45, 85, 0.4);
+            --online: #34d399;
+            --offline: #ff2d55;
+            --meter-low: #34d399;
+            --meter-mid: #fbbf24;
+            --meter-high: #ff2d55;
+            --meter-bg: #111320;
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .app {
+            max-width: 480px;
+            height: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .logo h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--dim);
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--offline);
+            transition: background 0.3s;
+        }
+
+        .status-dot.on {
+            background: var(--online);
+            box-shadow: 0 0 8px var(--online);
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            margin: 12px 20px 0;
+            background: linear-gradient(90deg, transparent, var(--accent-dim), transparent);
+        }
+
+        /* Connection Panel */
+        .conn {
+            margin: 12px 20px 0;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .conn-head {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--dim);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .field {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 6px;
+        }
+
+        .field label {
+            width: 42px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--dim);
+            letter-spacing: 1px;
+            flex-shrink: 0;
+        }
+
+        .field input {
+            flex: 1;
+            background: #0a0c16;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            padding: 8px 10px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .field input:focus {
+            border-color: var(--accent);
+        }
+
+        .conn-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .conn-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .conn-btn.off {
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            color: #ffffff;
+        }
+
+        .conn-btn.on {
+            background: var(--offline);
+            color: #ffffff;
+        }
+
+        .conn-btn:active {
+            transform: scale(0.97);
+        }
+
+        .conn-status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--offline);
+            transition: color 0.3s;
+        }
+
+        .conn-status.on {
+            color: var(--online);
+        }
+
+        /* Meter */
+        .meter {
+            margin: 10px 20px 0;
+        }
+
+        .meter-head {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--dim);
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .wave-cv {
+            width: 100%;
+            height: 44px;
+            background: var(--meter-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: block;
+        }
+
+        .bars {
+            display: flex;
+            gap: 2px;
+            height: 14px;
+            margin-top: 4px;
+            padding: 2px 3px;
+            background: var(--meter-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .bars .b {
+            flex: 1;
+            border-radius: 2px;
+            background: var(--meter-bg);
+            transition: background 50ms;
+        }
+
+        /* Talk */
+        .talk {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        .talk-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--dim);
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            transition: color 0.2s;
+        }
+
+        .talk-label.tx {
+            color: var(--talk-active);
+            text-shadow: 0 0 20px var(--talk-glow);
+        }
+
+        .talk-label.rdy {
+            color: var(--online);
+        }
+
+        .ptt-wrap {
+            position: relative;
+            width: 190px;
+            height: 190px;
+            margin-bottom: 12px;
+        }
+
+        .ptt-ring {
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 2px solid var(--talk-border);
+            transition: all 0.2s;
+        }
+
+        .ptt-ring.on {
+            border-color: var(--talk-active);
+            box-shadow: 0 0 40px var(--talk-glow);
+        }
+
+        .ptt-pulse {
+            position: absolute;
+            inset: -18px;
+            border-radius: 50%;
+            border: 1px solid transparent;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(1.15);
+                opacity: 0;
+            }
+        }
+
+        .ptt-pulse.on {
+            border-color: var(--talk-active);
+            animation: pulse 1s ease-out infinite;
+        }
+
+        .ptt {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%, #252840, var(--talk-idle));
+            border: 2px solid var(--talk-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            z-index: 2;
+            transition: all 0.15s;
+            -webkit-touch-callout: none;
+        }
+
+        .ptt:active, .ptt.on {
+            transform: scale(0.96);
+        }
+
+        .ptt.on {
+            background: radial-gradient(circle at 40% 35%, #ff5070, var(--talk-active));
+            border-color: var(--talk-active);
+            box-shadow: 0 0 60px var(--talk-glow), inset 0 0 30px rgba(255, 45, 85, 0.2);
+        }
+
+        .ptt .ico {
+            font-size: 40px;
+            margin-bottom: 6px;
+            filter: grayscale(0.5);
+            transition: filter 0.2s;
+        }
+
+        .ptt.on .ico {
+            filter: grayscale(0) brightness(1.3);
+        }
+
+        .ptt .txt {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--dim);
+            letter-spacing: 3px;
+            transition: color 0.2s;
+        }
+
+        .ptt.on .txt {
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .hint {
+            font-size: 11px;
+            color: var(--dim);
+            text-align: center;
+        }
+
+        #mic-help {
+            display: none;
+            color: var(--offline);
+            font-size: 10px;
+            text-align: center;
+            margin-top: 10px;
+            line-height: 1.5;
+            padding: 0 10px;
+        }
+
+        /* Footer */
+        .foot {
+            padding: 8px 16px;
+            background: var(--bg2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+        }
+
+        .foot span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--dim);
+        }
+
+        .users-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--card);
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">📡</div>
+            <h1>TALKIE-WALKIE</h1>
+        </div>
+        <div class="status-pill">
+            <div class="status-dot" id="sDot"></div>
+            <span id="sText">OFFLINE</span>
+        </div>
+    </div>
+    <div class="divider"></div>
+
+    <div class="conn">
+        <div class="conn-head">SERVER</div>
+        <div class="field">
+            <label>HOST</label>
+            <input type="text" id="iHost" value="">
+        </div>
+        <div class="field">
+            <label>PORT</label>
+            <input type="text" id="iPort" value="5000">
+        </div>
+        <div class="conn-actions">
+            <button class="conn-btn off" id="cBtn">▶ CONNECT</button>
+            <span class="conn-status" id="cStat">OFFLINE</span>
+        </div>
+    </div>
+
+    <div class="meter">
+        <div class="meter-head">AUDIO LEVEL</div>
+        <canvas class="wave-cv" id="wCv"></canvas>
+        <div class="bars" id="bMeter"></div>
+    </div>
+
+    <div class="talk">
+        <div class="talk-label" id="tLbl">STANDBY</div>
+        <div class="ptt-wrap">
+            <div class="ptt-pulse" id="tPulse"></div>
+            <div class="ptt-ring" id="tRing"></div>
+            <div class="ptt" id="tBtn">
+                <div class="ico">🎙</div>
+                <div class="txt">TALK</div>
+            </div>
+        </div>
+        <div class="hint" id="hintMain">Hold button or SPACEBAR to transmit</div>
+        <div id="mic-help">
+            <b>MIC BLOCKED</b><br>
+            <span style="color:var(--dim)">Go to <b>chrome://flags/#unsafely-treat-insecure-origin-as-secure</b><br>Enable it and add your server URL.</span>
+        </div>
+    </div>
+
+    <div class="foot">
+        <span>16kHz · Mono · 16-bit │ WebSocket</span>
+        <span class="users-badge" id="uBadge">0 users</span>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+    const RATE = 16000;
+    const CHUNK = 1024;
+    const GAIN = 4.0;
+    const BARS = 30;
+
+    const getEl = (id) => document.getElementById(id);
+
+    const iHost = getEl('iHost');
+    const iPort = getEl('iPort');
+    const cBtn = getEl('cBtn');
+    const cStat = getEl('cStat');
+    const sDot = getEl('sDot');
+    const sText = getEl('sText');
+    const tBtn = getEl('tBtn');
+    const tRing = getEl('tRing');
+    const tPulse = getEl('tPulse');
+    const tLbl = getEl('tLbl');
+    const uBadge = getEl('uBadge');
+    const wCv = getEl('wCv');
+    const wCtx = wCv.getContext('2d');
+    const bMeter = getEl('bMeter');
+
+    iHost.value = location.hostname || '127.0.0.1';
+
+    // Initialize Bar Meter
+    for (let i = 0; i < BARS; i++) {
+        const d = document.createElement('div');
+        d.className = 'b';
+        bMeter.appendChild(d);
+    }
+    const barEls = bMeter.querySelectorAll('.b');
+
+    // Canvas Resize Handling
+    function resizeCv() {
+        const r = window.devicePixelRatio || 1;
+        wCv.width = wCv.clientWidth * r;
+        wCv.height = wCv.clientHeight * r;
+        wCtx.setTransform(r, 0, 0, r, 0, 0);
+    }
+
+    resizeCv();
+    window.addEventListener('resize', resizeCv);
+
+    // Application State
+    let sock = null;
+    let connected = false;
+    let talking = false;
+    let audioCtx = null;
+    let micStream = null;
+    let micProc = null;
+    let level = 0;
+    let waveData = null;
+    let nextPlayTime = 0;
+
+    // --- Audio Playback with Scheduling ---
+    function initAudio() {
+        if (audioCtx) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: RATE });
+        nextPlayTime = audioCtx.currentTime;
+    }
+
+    function playChunk(data) {
+        if (!audioCtx) return;
+        
+        const i16 = new Int16Array(data);
+        const f32 = new Float32Array(i16.length);
+        
+        for (let i = 0; i < i16.length; i++) {
+            f32[i] = Math.max(-1, Math.min(1, (i16[i] / 32768) * GAIN));
+        }
+        
+        const buf = audioCtx.createBuffer(1, f32.length, RATE);
+        buf.getChannelData(0).set(f32);
+        
+        const src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        src.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        if (nextPlayTime < now) {
+            nextPlayTime = now;
+        }
+        
+        src.start(nextPlayTime);
+        nextPlayTime += buf.duration;
+        
+        if (!talking) {
+            waveData = f32;
+            computeLevel(f32);
+        }
+    }
+
+    // --- Microphone Capture ---
+    async function startMic() {
+        initAudio();
+        
+        if (audioCtx.state === 'suspended') {
+            await audioCtx.resume();
+        }
+        
+        try {
+            micStream = await navigator.mediaDevices.getUserMedia({
+                audio: { 
+                    channelCount: 1, 
+                    sampleRate: RATE, 
+                    echoCancellation: true, 
+                    noiseSuppression: true, 
+                    autoGainControl: true 
+                }
+            });
+            getEl('mic-help').style.display = 'none';
+        } catch (e) {
+            tLbl.textContent = 'MIC ERROR';
+            tLbl.className = 'talk-label tx';
+            getEl('hintMain').style.display = 'none';
+            getEl('mic-help').style.display = 'block';
+            talking = false;
+            setTalkUI(false);
+            return;
+        }
+        
+        const source = audioCtx.createMediaStreamSource(micStream);
+        micProc = audioCtx.createScriptProcessor(CHUNK, 1, 1);
+        
+        micProc.onaudioprocess = (e) => {
+            if (!talking) return;
+            
+            const f = e.inputBuffer.getChannelData(0);
+            const i16 = new Int16Array(f.length);
+            
+            for (let i = 0; i < f.length; i++) {
+                let s = Math.max(-1, Math.min(1, f[i]));
+                i16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            
+            if (sock && sock.connected) {
+                sock.emit('audio', i16.buffer);
+            }
+            
+            waveData = f.slice();
+            computeLevel(f);
+        };
+        
+        source.connect(micProc);
+        micProc.connect(audioCtx.destination);
+    }
+
+    function stopMic() {
+        if (micProc) {
+            micProc.disconnect();
+            micProc = null;
+        }
+        if (micStream) {
+            micStream.getTracks().forEach(t => t.stop());
+            micStream = null;
+        }
+    }
+
+    // --- Audio Level Calculation ---
+    function computeLevel(s) {
+        let sq = 0;
+        for (let i = 0; i < s.length; i++) {
+            sq += s[i] * s[i];
+        }
+        const rms = Math.sqrt(sq / s.length);
+        const n = Math.min(1, rms / 0.15);
+        if (n > level) {
+            level = n;
+        }
+    }
+
+    function updateBars() {
+        const lit = Math.floor(level * BARS);
+        for (let i = 0; i < BARS; i++) {
+            if (i < lit) {
+                const f = i / BARS;
+                if (f < 0.5) {
+                    barEls[i].style.background = 'var(--meter-low)';
+                } else if (f < 0.8) {
+                    barEls[i].style.background = 'var(--meter-mid)';
+                } else {
+                    barEls[i].style.background = 'var(--meter-high)';
+                }
+            } else {
+                barEls[i].style.background = 'var(--meter-bg)';
+            }
+        }
+    }
+
+    function drawWave() {
+        const w = wCv.clientWidth;
+        const h = wCv.clientHeight;
+        
+        wCtx.clearRect(0, 0, w, h);
+        const mid = h / 2;
+        
+        if (!waveData || !waveData.length) {
+            const t = Date.now() / 200;
+            wCtx.strokeStyle = 'rgba(0, 212, 255, 0.2)';
+            wCtx.lineWidth = 1.5;
+            wCtx.beginPath();
+            
+            for (let x = 0; x < w; x++) {
+                const y = mid + Math.sin(x * 0.05 + t) * 3;
+                if (x === 0) {
+                    wCtx.moveTo(x, y);
+                } else {
+                    wCtx.lineTo(x, y);
+                }
+            }
+            wCtx.stroke();
+            return;
+        }
+        
+        const step = Math.max(1, Math.floor(waveData.length / w));
+        wCtx.strokeStyle = '#00d4ff';
+        wCtx.lineWidth = 2;
+        wCtx.beginPath();
+        
+        for (let x = 0; x < w; x++) {
+            const idx = Math.min(x * step, waveData.length - 1);
+            const y = mid - (waveData[idx] * (mid - 2));
+            if (x === 0) {
+                wCtx.moveTo(x, y);
+            } else {
+                wCtx.lineTo(x, y);
+            }
+        }
+        wCtx.stroke();
+    }
+
+    function tick() {
+        updateBars();
+        drawWave();
+        level *= 0.82;
+        
+        if (level < 0.01) {
+            level = 0;
+            waveData = null;
+        }
+        requestAnimationFrame(tick);
+    }
+    
+    tick();
+
+    // --- Connection Handling ---
+    function toggleConn() {
+        if (connected) {
+            disconnect();
+        } else {
+            connect();
+        }
+    }
+
+    function connect() {
+        const h = iHost.value.trim();
+        const p = iPort.value.trim();
+        
+        sock = io(`http://${h}:${p}`, {
+            transports: ['websocket'],
+            reconnection: true,
+            reconnectionDelay: 2000
+        });
+        
+        sock.on('connect', () => {
+            connected = true;
+            cBtn.textContent = '■ DISCONNECT';
+            cBtn.className = 'conn-btn on';
+            cStat.textContent = 'ONLINE';
+            cStat.classList.add('on');
+            sDot.classList.add('on');
+            sText.textContent = 'ONLINE';
+            tLbl.textContent = 'READY';
+            tLbl.className = 'talk-label rdy';
+        });
+        
+        sock.on('disconnect', () => disconnect());
+        
+        sock.on('audio', (data) => {
+            initAudio();
+            playChunk(data);
+        });
+        
+        sock.on('status', (data) => {
+            if (data.users != null) {
+                uBadge.textContent = data.users + ' user' + (data.users !== 1 ? 's' : '');
+            }
+        });
+    }
+
+    function disconnect() {
+        if (sock) {
+            sock.disconnect();
+            sock = null;
+        }
+        
+        connected = false;
+        talking = false;
+        stopMic();
+        nextPlayTime = 0;
+        
+        cBtn.textContent = '▶ CONNECT';
+        cBtn.className = 'conn-btn off';
+        cStat.textContent = 'OFFLINE';
+        cStat.classList.remove('on');
+        sDot.classList.remove('on');
+        sText.textContent = 'OFFLINE';
+        tLbl.textContent = 'STANDBY';
+        tLbl.className = 'talk-label';
+        
+        setTalkUI(false);
+    }
+
+    cBtn.addEventListener('click', toggleConn);
+
+    // --- Push-To-Talk Actions ---
+    function setTalkUI(on) {
+        tBtn.classList.toggle('on', on);
+        tRing.classList.toggle('on', on);
+        tPulse.classList.toggle('on', on);
+    }
+
+    function pttOn() {
+        if (!connected || talking) return;
+        
+        talking = true;
+        tLbl.textContent = '● TRANSMITTING';
+        tLbl.className = 'talk-label tx';
+        
+        setTalkUI(true);
+        startMic();
+        
+        if (navigator.vibrate) {
+            navigator.vibrate(30);
+        }
+    }
+    
+    function pttOff() {
+        if (!talking) return;
+        
+        talking = false;
+        if (connected) {
+            tLbl.textContent = 'READY';
+            tLbl.className = 'talk-label rdy';
+        }
+        
+        setTalkUI(false);
+        stopMic();
+    }
+
+    tBtn.addEventListener('mousedown', pttOn);
+    tBtn.addEventListener('mouseup', pttOff);
+    tBtn.addEventListener('mouseleave', pttOff);
+    tBtn.addEventListener('touchstart', (e) => { e.preventDefault(); pttOn(); });
+    tBtn.addEventListener('touchend', (e) => { e.preventDefault(); pttOff(); });
+    tBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); pttOff(); });
+
+    let spDown = false;
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !spDown) {
+            e.preventDefault();
+            spDown = true;
+            pttOn();
+        }
+    });
+    
+    document.addEventListener('keyup', (e) => {
+        if (e.code === 'Space') {
+            e.preventDefault();
+            spDown = false;
+            pttOff();
+        }
+    });
+</script>
+</body>
+</html>
